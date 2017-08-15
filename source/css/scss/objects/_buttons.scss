@@ -42,7 +42,7 @@
     @include box-shadow( none );
 
     color: $black;
-    cursor: $cursor-disabled;
+    // cursor: $cursor-disabled;
     background-color: $grey-light;
     box-shadow: 0 0 0 1px $white;
   }
@@ -128,7 +128,7 @@
     @include box-shadow( none );
 
     color: $black;
-    cursor: $cursor-disabled;
+    // cursor: $cursor-disabled;
     background-color: $grey-light;
     box-shadow: 0 0 0 1px $white;
   }
