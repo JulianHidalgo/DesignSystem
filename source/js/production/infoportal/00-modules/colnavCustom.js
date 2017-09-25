@@ -7,7 +7,21 @@ var colnavCustom = function() {
   var shifted; // Boolean to determine if shift key was pressed
   var savedResults = {}; // Object to hold saved results
   var pluginInstance; // Variable to hold Foundation plugin instance
-  $('.a-js-drilldownLoader').hide(); // Hide loader
+  //var cachedData = {};
+
+  var keys = {
+    colnavWrapper: '.a-colnav-wrapper',
+    loaderClass: '.a-js-drilldownLoader'
+  }
+
+  function hideLoader() {
+    $(keys.loaderClass).hide();
+  }
+
+  function showLoader() {
+    $(keys.loaderClass).show();
+  }
+
   function urlQuery(query) { // Parse current URL for query value
     var _query = query.replace(/[[]/, '[').replace(/[\]]/, '\\]');
     var expr = '[\\?&]' + _query + '=([^&#]*)';
@@ -18,6 +32,18 @@ var colnavCustom = function() {
     }
     return false;
   }
+
+  function decodeUrl(url) {
+    return url
+            .replace(/%C3%A6/g, 'æ')
+            .replace(/%C3%B8/g, 'ø')
+            .replace(/%C3%A5/g, 'å')
+            .replace(/%C3%86/g, 'Æ')
+            .replace(/%C3%98/g, 'Ø')
+            .replace(/%C3%85/g, 'Å')
+            .replace(/%20/g, ' ');
+  }
+
   function calc(x, y, z) { // Perform various calculations to determine placements and widths
     var a = $('.a-contentOverview').width();
     if (isSmall) {
@@ -48,6 +74,7 @@ var colnavCustom = function() {
         parseInt(a / y / (z || 1), 10) + 'px'
       );
   }
+
   function whenKey(e, classToQuery) { // Logic for keypresses on items
     var code = e.keyCode || e.which;
     if (code === 27 || code === 37 || code === 38 || code === 39 || code === 40) {
@@ -87,6 +114,7 @@ var colnavCustom = function() {
       }
     }
   }
+
   function whenClick(eventOrElement, alt) { // Logic for clicks on items
     console.log('whenClick');
     var el = alt === undefined ? $(eventOrElement.target) : eventOrElement; // Determine element
@@ -125,11 +153,6 @@ var colnavCustom = function() {
         } else if (el.closest('a').hasClass('open') || el.find('a').hasClass('open') ||
           el.hasClass('open')) {
           text = el.closest('ul').prev().find('h2').data('id') || ''; // Get name from parent
-          /*if (history.pushState) { // Modify the browser history object
-            newurl = window.location.protocol + '//' + window.location.host +
-              window.location.pathname + '?position=' + text.toLowerCase().replace(/ /g, '%20');
-            window.history.pushState({ path: newurl }, '', newurl);
-          }*/
           if (history.replaceState) { // Modify the browser history object
             newurl = window.location.pathname + '?position=' + text + category;
             console.log(newurl);
@@ -148,11 +171,6 @@ var colnavCustom = function() {
           }
         // If item is not open:
         } else {
-          /*if (history.replaceState) { // Modify the browser history object
-            newurl = window.location.protocol + '//' + window.location.host +
-              window.location.pathname + '?position=' + text.toLowerCase().replace(/ /g, '%20');
-            window.history.replaceState({ path: newurl }, '', newurl);
-          }*/
           if (history.replaceState) { // Modify the browser history object
             newurl = window.location.pathname + '?position=' + text + category;
             console.log(newurl);
@@ -226,206 +244,196 @@ var colnavCustom = function() {
     if (!$('.a-colnav-firstLevel').hasClass('stacked')) {
       $('.a-colnav-firstLevel').css('height', 'auto');
     }
-  }
-  function getDrilldownSource(str) { // Drilldown logic
-    var url = $('[name="js-switchForm"]').parent().parent().parent()
-      .attr('data-switchEndpoint') + str;
-    var afterRequest = function(data) { // Populating logic
-      var depth = 3; // Assume a depth of three levels
-      var markup = []; // Array to store markup
-      $('.a-colnav').html(''); // Wipe previous markup
-      setTimeout(function() {
-        savedResults[str] = data; // Save results for later
-        data.forEach(function(item) { // Parse and generate markup
-          var level2 = [];
-          var li = document.createElement('li');
-          var a = document.createElement('a');
-          var h2 = document.createElement('h2');
-          var p = document.createElement('p');
-          var ul = document.createElement('ul');
-          item[item.SubCategory ? 'SubCategory' : 'List'].forEach(function(_item) {
-            var level3 = [];
-            var _li = document.createElement('li');
-            var _a1 = document.createElement('a');
-            var _a2 = document.createElement('a');
-            var _h3 = document.createElement('h3');
-            var _h4 = document.createElement('h4');
-            var _ul = document.createElement('ul');
-            if (_item[_item.SchemaList ? 'SchemaList' : 'List']) {
-              _item[_item.SchemaList ? 'SchemaList' : 'List'].forEach(function(__item) {
-                var __li = document.createElement('li');
-                var __a = document.createElement('a');
-                var __h4 = document.createElement('h4');
-                var __span = document.createElement('span');
-                $(__h4).text(__item.Heading || __item.Title).appendTo($(__a));
-                $(__h4).attr('data-id', __item.Id);
-                $(__span).addClass('a-colnav-rightText').text(__item.Provider || '–')
-                  .appendTo($(__a));
-                $(__a).attr('href', __item.Url).addClass('a-colnav-item-third').appendTo($(__li));
-                level3.push(__li);
-              });
-            } else {
-              depth = 2;
-            }
-            $(_h3).text(_item.Heading || _item.Title).appendTo($(_a1));
-            $(_h3).attr('data-id', _item.Id);
-            $(_h4).text(_item.Heading || _item.Title).appendTo($(_a2));
-            $(_a1)
-              // .attr('href', '#')
-              .addClass('a-colnav-item-second').addClass('a-js-colnavLink')
-              .appendTo($(_li));
-            $(_a2).attr('href', _item.Url).addClass('a-colnav-item-second')
-              .addClass('a-js-colnavLinkAlt')
-              .appendTo($(_li));
-            $(_ul).addClass('a-colnav').addClass('a-colnav-vertical')
-              .addClass('a-colnav-thirdLevel')
-              .append(level3)
-              .appendTo($(_li));
-            level2.push(_li);
-          });
-          $(h2).text(item.Heading).appendTo($(a));
-          $(h2).attr('data-id', item.Id);
-          $(p).text(item.Description).addClass('a-leadText').appendTo($(a));
-          $(a)
-            // .attr('href', '#')
-            .addClass('a-colnav-item').appendTo($(li));
-          $(ul).addClass('a-colnav').addClass('a-colnav-vertical').addClass('a-colnav-secondLevel')
-            .append(level2)
-            .appendTo($(li));
-          markup.push(li);
+  }  
+
+  function attachHandlers(depth) {
+    var queryHit = false;
+    // (Re)initialize Foundation library logic:
+    if ($('.a-colnav').attr('data-dropdown-menu')) {
+      pluginInstance.destroy();
+      pluginInstance = new Foundation.DropdownMenu($('.a-colnav').eq(0));
+    } else {
+      pluginInstance = new Foundation.DropdownMenu($('.a-colnav').eq(0));
+    }
+    if ($(keys.colnavWrapper).length > 0) { // Conditional logic for different screen sizes
+      if (isSmall) {
+        $(keys.colnavWrapper).html($(keys.colnavWrapper).html()
+          .replace(/drilldown/g, 'dropdown'));
+        $('.a-colnav').find('a').on('mouseup', function(event) { // Apply action logic
+          if (!movedDuringTouch) {
+            whenClick(event);
+          }
         });
-        $('.a-colnav').html(markup); // Append markup
-        setTimeout(function() {
-          var queryHit = false;
-          // (Re)initialize Foundation library logic:
-          if ($('.a-colnav').attr('data-dropdown-menu')) {
-            pluginInstance.destroy();
-            pluginInstance = new Foundation.DropdownMenu($('.a-colnav').eq(0));
-          } else {
-            pluginInstance = new Foundation.DropdownMenu($('.a-colnav').eq(0));
-          }
-          if ($('.a-colnav-wrapper').length > 0) { // Conditional logic for different screen sizes
-            if (isSmall) {
-              $('.a-colnav-wrapper').html($('.a-colnav-wrapper').html()
-                .replace(/drilldown/g, 'dropdown'));
-              $('.a-colnav').find('a').on('mouseup', function(event) { // Apply action logic
-                if (!movedDuringTouch) {
-                  whenClick(event);
-                }
-              });
-            } else {
-              $('.a-colnav-wrapper')
-                .html($('.a-colnav-wrapper').html().replace(/drilldown/g, 'dropdown'))
-                .show().children()
-                .on('mouseup', function(event) { // Apply action logic
-                  whenClick(event); return false;
-                });
-            }
-          }
-          $(document).on('keyup keydown', function(e) { // Detect shift key
-            shifted = e.shiftKey;
+      } else {
+        $(keys.colnavWrapper)
+          .html($(keys.colnavWrapper).html().replace(/drilldown/g, 'dropdown'))
+          .show().children()
+          .on('mouseup', function(event) { // Apply action logic
+            whenClick(event); return false;
           });
-          // Set tabindexes:
-          $('.a-colnav-item-second').attr('tabindex', '0');
-          $('.a-colnav-item-third').attr('tabindex', '0');
-          // Apply remaining action logic:
-          $('.a-colnav-item').on('keydown', function(event) {
-            whenKey(event, '.a-colnav-item');
-          });
-          $('.a-colnav-item-second').on('keydown', function(event) {
-            whenKey(event, '.a-colnav-item-second');
-          });
-          $('.a-colnav-item-third').on('keydown', function(event) {
-            whenKey(event, '.a-colnav-item-third');
-          });
-          $('.a-colnav-item').on('click', function(event) {
-            if ($(window).scrollTop() > $('.a-colnav-wrapper').offset().top) {
-              $('html,body').animate({ scrollTop: $('.a-colnav-wrapper').offset().top }, 300);
-            }
-          });
-          $('.a-colnav-item').attr('tabindex', '0').on('focus', function() {
-            if ($('.a-colnav-secondLevel.submenu.is-active').length === 1) {
-              $(this).off('keydown.zf.drilldown').parent().find('.a-colnav-item-second')
-                .eq(0)
-                .focus();
-            }
-          });
-          $('.a-js-backButton').on('click', function() {
-            whenClick($('a.open').last(), true);
-          });
-          $('.a-colnav').find('a').on('touchstart', function(event) {
-            event.stopPropagation(); movedDuringTouch = false;
-          });
-          $('.a-colnav').find('a').on('touchmove', function(event) {
-            movedDuringTouch = true; event.stopPropagation();
-          });
-          // Perform depth specific markup changes:
-          if (depth === 2) {
-            $('.a-colnav').find('.a-colnav-thirdLevel').remove();
-            $('.a-colnav').find('.a-js-colnavLink').remove();
-            $('.a-colnav').find('.a-leadText').remove();
-          } else {
-            $('.a-colnav').find('.a-js-colnavLinkAlt').remove();
-          }
-          if (urlQuery('position')) { // Check if position is included in URL, and navigate to it
-            $('.a-colnav').find('a.a-colnav-item').each(function() {
-              if ($(this).find('h2').text().toLowerCase() ===
-                urlQuery('position')
-                  .replace(/%C3%A6/g, 'æ')
-                  .replace(/%C3%B8/g, 'ø')
-                  .replace(/%C3%A5/g, 'å')
-                  .replace(/%C3%86/g, 'Æ')
-                  .replace(/%C3%98/g, 'Ø')
-                  .replace(/%C3%85/g, 'Å')
-                  .replace(/%20/g, ' ')) {
-                queryHit = true;
-                whenClick($(this), true);
-              }
-            });
-            if ($('[name="js-switchForm"]').eq(0).is(':checked')) {
-              $('.a-colnav').find('a.a-colnav-item-second').each(function() {
-                if ($(this).find('h3').text().toLowerCase() ===
-                  urlQuery('position')
-                    .replace(/%C3%A6/g, 'æ')
-                    .replace(/%C3%B8/g, 'ø')
-                    .replace(/%C3%A5/g, 'å')
-                    .replace(/%C3%86/g, 'Æ')
-                    .replace(/%C3%98/g, 'Ø')
-                    .replace(/%C3%85/g, 'Å')
-                    .replace(/%20/g, ' ')) {
-                  queryHit = true;
-                  whenClick($(this).closest('ul').prev(), true);
-                  setTimeout(function() {
-                    whenClick($(this), true);
-                  }.bind(this), 250);
-                }
-              });
-            }
-            if (!queryHit && $('[name="js-switchForm"]').eq(0).is(':checked')) {
-              $('[name="js-switchForm"]').eq(1)[0].click();
-            }
-          }
-        }, 0);
-      }, 0);
-    };
-    if (savedResults[str]) { // Get stored results if present
-      afterRequest(savedResults[str]);
-    } else if (window.location.pathname.indexOf('DesignSystem') === 1 || window.location.origin.indexOf('localhost') !== -1 || window.location.origin.indexOf('10.4.67.79') !== -1) {
-      $.ajax({
-        type: 'GET',
-        url: url + '.json',
-        success: function(data) {
-          afterRequest(data); // Perform populating logic
+      }
+    }
+    $(document).on('keyup keydown', function(e) { // Detect shift key
+      shifted = e.shiftKey;
+    });
+    // Set tabindexes:
+    $('.a-colnav-item-second').attr('tabindex', '0');
+    $('.a-colnav-item-third').attr('tabindex', '0');
+    // Apply remaining action logic:
+    $('.a-colnav-item').on('keydown', function(event) {
+      whenKey(event, '.a-colnav-item');
+    });
+    $('.a-colnav-item-second').on('keydown', function(event) {
+      whenKey(event, '.a-colnav-item-second');
+    });
+    $('.a-colnav-item-third').on('keydown', function(event) {
+      whenKey(event, '.a-colnav-item-third');
+    });
+    $('.a-colnav-item').on('click', function(event) {
+      if ($(window).scrollTop() > $(keys.colnavWrapper).offset().top) {
+        $('html,body').animate({ scrollTop: $(keys.colnavWrapper).offset().top }, 300);
+      }
+    });
+    $('.a-colnav-item').attr('tabindex', '0').on('focus', function() {
+      if ($('.a-colnav-secondLevel.submenu.is-active').length === 1) {
+        $(this).off('keydown.zf.drilldown').parent().find('.a-colnav-item-second')
+          .eq(0)
+          .focus();
+      }
+    });
+    $('.a-js-backButton').on('click', function() {
+      whenClick($('a.open').last(), true);
+    });
+    $('.a-colnav').find('a').on('touchstart', function(event) {
+      event.stopPropagation(); movedDuringTouch = false;
+    });
+    $('.a-colnav').find('a').on('touchmove', function(event) {
+      movedDuringTouch = true; event.stopPropagation();
+    });
+    // Perform depth specific markup changes:
+    if (depth === 2) {
+      $('.a-colnav').find('.a-colnav-thirdLevel').remove();
+      $('.a-colnav').find('.a-js-colnavLink').remove();
+      $('.a-colnav').find('.a-leadText').remove();
+    } else {
+      $('.a-colnav').find('.a-js-colnavLinkAlt').remove();
+    }
+    if (urlQuery('position')) { // Check if position is included in URL, and navigate to it
+      $('.a-colnav').find('a.a-colnav-item').each(function() {
+        if ($(this).find('h2').text().toLowerCase() === decodeUrl(urlQuery('position'))) {
+          queryHit = true;
+          whenClick($(this), true);
         }
       });
-    } else {
+      if ($('[name="js-switchForm"]').eq(0).is(':checked')) {
+        $('.a-colnav').find('a.a-colnav-item-second').each(function() {
+          if ($(this).find('h3').text().toLowerCase() === decodeUrl(urlQuery('position'))) {
+            queryHit = true;
+            whenClick($(this).closest('ul').prev(), true);
+            setTimeout(function() {
+              whenClick($(this), true);
+            }.bind(this), 250);
+          }
+        });
+      }
+      if (!queryHit && $('[name="js-switchForm"]').eq(0).is(':checked')) {
+        $('[name="js-switchForm"]').eq(1)[0].click();
+      }
+    }    
+  }
+
+  function populateNavigation(str, data) {
+      var depth = 3; // Assume a depth of three levels
+      var markup = []; // Array to store markup
+      savedResults[str] = data; // Save results for later
+      data.forEach(function(item) { // Parse and generate markup
+        var level2 = [];
+        var li = document.createElement('li');
+        var a = document.createElement('a');
+        var h2 = document.createElement('h2');
+        var p = document.createElement('p');
+        var ul = document.createElement('ul');
+        item[item.SubCategory ? 'SubCategory' : 'List'].forEach(function(_item) {
+          var level3 = [];
+          var _li = document.createElement('li');
+          var _a1 = document.createElement('a');
+          var _a2 = document.createElement('a');
+          var _h3 = document.createElement('h3');
+          var _h4 = document.createElement('h4');
+          var _ul = document.createElement('ul');
+          if (_item[_item.SchemaList ? 'SchemaList' : 'List']) {
+            _item[_item.SchemaList ? 'SchemaList' : 'List'].forEach(function(__item) {
+              var __li = document.createElement('li');
+              var __a = document.createElement('a');
+              var __h4 = document.createElement('h4');
+              var __span = document.createElement('span');
+              $(__h4).text(__item.Heading || __item.Title).appendTo($(__a));
+              $(__h4).attr('data-id', __item.Id);
+              $(__span).addClass('a-colnav-rightText').text(__item.Provider || '–')
+                .appendTo($(__a));
+              $(__a).attr('href', __item.Url).addClass('a-colnav-item-third').appendTo($(__li));
+              level3.push(__li);
+            });
+          } else {
+            depth = 2;
+          }
+          $(_h3).text(_item.Heading || _item.Title).appendTo($(_a1));
+          $(_h3).attr('data-id', _item.Id);
+          $(_h4).text(_item.Heading || _item.Title).appendTo($(_a2));
+          $(_a1)
+            // .attr('href', '#')
+            .addClass('a-colnav-item-second').addClass('a-js-colnavLink')
+            .appendTo($(_li));
+          $(_a2).attr('href', _item.Url).addClass('a-colnav-item-second')
+            .addClass('a-js-colnavLinkAlt')
+            .appendTo($(_li));
+          $(_ul).addClass('a-colnav').addClass('a-colnav-vertical')
+            .addClass('a-colnav-thirdLevel')
+            .append(level3)
+            .appendTo($(_li));
+          level2.push(_li);
+        });
+        $(h2).text(item.Heading).appendTo($(a));
+        $(h2).attr('data-id', item.Id);
+        $(p).text(item.Description).addClass('a-leadText').appendTo($(a));
+        $(a)
+          // .attr('href', '#')
+          .addClass('a-colnav-item').appendTo($(li));
+        $(ul).addClass('a-colnav').addClass('a-colnav-vertical').addClass('a-colnav-secondLevel')
+          .append(level2)
+          .appendTo($(li));
+        markup.push(li);
+      });
+      $('.a-colnav').html(markup); // Append markup
+      hideLoader();
+      setTimeout(function() { attachHandlers(depth) }, 0);
+    }
+
+  function afterRequest(str, data) { // Populating logic      
+      $('.a-colnav').html(''); // Wipe previous markup
+      $('.a-colnav').show();
+      setTimeout(function() { populateNavigation(str, data); }, 0);
+    };
+
+  function getDrilldownSource(str) { // Drilldown logic
+    console.log('getDrilldownSource');
+    showLoader();
+    if (savedResults[str]) { // Get stored results if present
+      afterRequest(str, savedResults[str]);
+    }
+    else {
+      var url = $('[name="js-switchForm"]').parent().parent().parent()
+        .attr('data-switchEndpoint') + str;
+      if (window.location.pathname.indexOf('DesignSystem') === 1 || window.location.origin.indexOf('localhost') !== -1 || window.location.origin.indexOf('10.4.67.79') !== -1) {
+        url = url + '.json';
+      }
       $.ajax({
         type: 'GET',
         url: url,
         success: function(data) {
-          afterRequest(data); // Perform populating logic
+          afterRequest(str, data); // Perform populating logic
         }
-      });
+      });      
     }
   }
   function resizedWindow() { // What happens upon window resize

@@ -15,12 +15,12 @@
 			{
 				"breadcrumb-title": "Arbeid og lønn",
 				"breadcrumb-link": "link.sider-infoportal-kolonnenavigasjon-v-skjemaoversikt",
-				"breadcrumb-link-position":"?position=arbeid-og-lønn"
+				"breadcrumb-link-position":"?position=2&category=provider"
 			},
 			{
 				"breadcrumb-title": "Arbeidsgiverforhold",
 				"breadcrumb-link": "link.sider-infoportal-kolonnenavigasjon-v-skjemaoversikt",
-				"breadcrumb-link-position":"?position=arbeidsgiverforhold",
+				"breadcrumb-link-position":"?position=2&category=provider",
 				"breadcrumb-class": "breadcrumb-mobile"
 			},
 			{
