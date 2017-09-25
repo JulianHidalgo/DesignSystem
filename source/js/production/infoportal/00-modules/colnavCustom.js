@@ -88,25 +88,27 @@ var colnavCustom = function() {
     }
   }
   function whenClick(eventOrElement, alt) { // Logic for clicks on items
+    console.log('whenClick');
     var el = alt === undefined ? $(eventOrElement.target) : eventOrElement; // Determine element
     // Determine li-element:
     var li = el.closest('li').hasClass('is-dropdown-submenu-parent') ? el.closest('li') : el;
     var newurl; // Variable to hold generated URL
     // Variable to hold text for heading and URL query, set to item name:
-    var text = li.find('h2').length > 0 ? li.find('h2').text() : li.find('h3').text();
+    var text = li.find('h2').length > 0 ? li.find('h2').data('id') : li.find('h3').data('id');
     if (li.children('a').hasClass('a-js-colnavLinkAlt')) { // If item holds an actual link, redirect
       window.location = li.children('a').attr('href');
     }
     levels.forEach(function(str, index) { // Iterate through levels
       var wasStacked; // Boolean to determine if level was stacked
+      var category = '&category=' + $('[name="js-switchForm"]:checked').data('switchurl').replace('get', '');
       if (el.closest('ul').hasClass(str)) { // Check if element exists
         // Check if device is small and level is stacked
         if (isSmall && el.closest('ul').hasClass('stacked')) {
-          text = el.closest('ul').prev().find('h2').text() || ''; // Get name from parent
-          if (history.pushState) { // Modify the browser history object
-            newurl = window.location.protocol + '//' + window.location.host +
-              window.location.pathname + '?position=' + text.toLowerCase().replace(/ /g, '%20');
-            window.history.pushState({ path: newurl }, '', newurl);
+          text = el.closest('ul').prev().find('h2').data('id') || ''; // Get name from parent
+          if (history.replaceState) { // Modify the browser history object
+            newurl = window.location.pathname + '?position=' + text + category;
+            console.log(newurl);
+            window.history.replaceState({ path: newurl }, '', newurl);
           }
           open = []; // Clear array for open levels
           // Hide lower levels:
@@ -122,12 +124,17 @@ var colnavCustom = function() {
         // Check if item is already open:
         } else if (el.closest('a').hasClass('open') || el.find('a').hasClass('open') ||
           el.hasClass('open')) {
-          text = el.closest('ul').prev().find('h2').text() || ''; // Get name from parent
-          if (history.pushState) { // Modify the browser history object
+          text = el.closest('ul').prev().find('h2').data('id') || ''; // Get name from parent
+          /*if (history.pushState) { // Modify the browser history object
             newurl = window.location.protocol + '//' + window.location.host +
               window.location.pathname + '?position=' + text.toLowerCase().replace(/ /g, '%20');
             window.history.pushState({ path: newurl }, '', newurl);
-          }
+          }*/
+          if (history.replaceState) { // Modify the browser history object
+            newurl = window.location.pathname + '?position=' + text + category;
+            console.log(newurl);
+            window.history.replaceState({ path: newurl }, '', newurl);
+          } 
           open = []; // Clear array for open levels
           // Hide lower levels:
           $('.' + levels[index + 1]).removeClass('noTrans').css('left', '250%');
@@ -141,10 +148,15 @@ var colnavCustom = function() {
           }
         // If item is not open:
         } else {
-          if (history.pushState) { // Modify the browser history object
+          /*if (history.replaceState) { // Modify the browser history object
             newurl = window.location.protocol + '//' + window.location.host +
               window.location.pathname + '?position=' + text.toLowerCase().replace(/ /g, '%20');
-            window.history.pushState({ path: newurl }, '', newurl);
+            window.history.replaceState({ path: newurl }, '', newurl);
+          }*/
+          if (history.replaceState) { // Modify the browser history object
+            newurl = window.location.pathname + '?position=' + text + category;
+            console.log(newurl);
+            window.history.replaceState({ path: newurl }, '', newurl);
           }
           if (index === 0) { // If on first level, reset markup and hide lower levels
             el.closest('ul').find('.dim').removeClass('dim');
@@ -246,6 +258,7 @@ var colnavCustom = function() {
                 var __h4 = document.createElement('h4');
                 var __span = document.createElement('span');
                 $(__h4).text(__item.Heading || __item.Title).appendTo($(__a));
+                $(__h4).attr('data-id', __item.Id);
                 $(__span).addClass('a-colnav-rightText').text(__item.Provider || '–')
                   .appendTo($(__a));
                 $(__a).attr('href', __item.Url).addClass('a-colnav-item-third').appendTo($(__li));
@@ -255,6 +268,7 @@ var colnavCustom = function() {
               depth = 2;
             }
             $(_h3).text(_item.Heading || _item.Title).appendTo($(_a1));
+            $(_h3).attr('data-id', _item.Id);
             $(_h4).text(_item.Heading || _item.Title).appendTo($(_a2));
             $(_a1)
               // .attr('href', '#')
@@ -270,6 +284,7 @@ var colnavCustom = function() {
             level2.push(_li);
           });
           $(h2).text(item.Heading).appendTo($(a));
+          $(h2).attr('data-id', item.Id);
           $(p).text(item.Description).addClass('a-leadText').appendTo($(a));
           $(a)
             // .attr('href', '#')
@@ -442,6 +457,7 @@ var colnavCustom = function() {
         );
       });
       $('[name="js-switchForm"]').change(function() { // Detect change of selected source
+        console.log($(this).attr('data-switchUrl'));
         if ($(this).is(':checked')) { // Get data from selected source
           getDrilldownSource($(this).attr('data-switchUrl'));
         }
