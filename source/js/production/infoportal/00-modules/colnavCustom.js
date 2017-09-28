@@ -204,7 +204,7 @@ var colnavCustom = function() {
                     // Hide lower levels:
                     $('.' + levels[index + 1]).removeClass('noTrans').css('left', '250%');
                     $('.' + levels[2]).removeClass('noTrans').css('left', '250%');
-                    //calc(index > 0 ? el.closest('ul') : 0, 3 / index); // Calculate left position for parent
+                    calc(index > 0 ? el.closest('ul') : 0, 3 / index); // Calculate left position for parent
                     // Reset markup:
                     el.closest('ul').removeClass('stacked').find('.open').removeClass('open');
                     el.closest('ul').find('.dim').removeClass('dim');
