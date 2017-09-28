@@ -7,11 +7,15 @@ var colnavCustom = function() {
   var shifted; // Boolean to determine if shift key was pressed
   var savedResults = {}; // Object to hold saved results
   var pluginInstance; // Variable to hold Foundation plugin instance
-  //var cachedData = {};
+  var endPointUrl = '';
 
   var keys = {
+    category: 'category',
+    checked: ':checked',
     colnavWrapper: '.a-colnav-wrapper',
-    loaderClass: '.a-js-drilldownLoader'
+    loaderClass: '.a-js-drilldownLoader',
+    toggleInput: '[name="js-switchForm"]',
+    switchurl: 'switchurl'
   }
 
   function hideLoader() {
@@ -53,12 +57,12 @@ var colnavCustom = function() {
     if (x !== parseInt(x, 10) && x !== parseFloat(x, 10)) {
       if (
         (
-          $('[name="js-switchForm"]').eq(1).is(':checked') &&
+          $(keys.toggleInput).eq(1).is(keys.checked) &&
           x.hasClass('a-colnav-secondLevel') &&
           parseInt(x.css('left'), 10) < 400
         ) ||
         (
-          $('[name="js-switchForm"]').eq(0).is(':checked') &&
+          $(keys.toggleInput).eq(0).is(keys.checked) &&
           x.hasClass('a-colnav-thirdLevel') &&
           parseInt(x.css('left'), 10) < 200
         )
@@ -73,6 +77,14 @@ var colnavCustom = function() {
       x.css('left',
         parseInt(a / y / (z || 1), 10) + 'px'
       );
+  }
+
+  function setHistoryState(position, category) {
+    if (history.replaceState) {
+      newurl = window.location.pathname + '?position=' + position + category;
+      console.log(newurl);
+      window.history.replaceState({ path: newurl }, '', newurl);
+    }
   }
 
   function whenKey(e, classToQuery) { // Logic for keypresses on items
@@ -122,22 +134,18 @@ var colnavCustom = function() {
     var li = el.closest('li').hasClass('is-dropdown-submenu-parent') ? el.closest('li') : el;
     var newurl; // Variable to hold generated URL
     // Variable to hold text for heading and URL query, set to item name:
-    var text = li.find('h2').length > 0 ? li.find('h2').data('id') : li.find('h3').data('id');
+    var position = li.find('h2').length > 0 ? li.find('h2').attr('data-id') : li.find('h3').attr('data-id');
     if (li.children('a').hasClass('a-js-colnavLinkAlt')) { // If item holds an actual link, redirect
-      window.location = li.children('a').attr('href');
+      window.location = li.children('a').prop('href');
     }
     levels.forEach(function(str, index) { // Iterate through levels
       var wasStacked; // Boolean to determine if level was stacked
-      var category = '&category=' + $('[name="js-switchForm"]:checked').data('switchurl').replace('get', '');
+      var category = '&category=' + $(keys.toggleInput+keys.checked).data(keys.switchurl).replace('get', '');
       if (el.closest('ul').hasClass(str)) { // Check if element exists
         // Check if device is small and level is stacked
         if (isSmall && el.closest('ul').hasClass('stacked')) {
-          text = el.closest('ul').prev().find('h2').data('id') || ''; // Get name from parent
-          if (history.replaceState) { // Modify the browser history object
-            newurl = window.location.pathname + '?position=' + text + category;
-            console.log(newurl);
-            window.history.replaceState({ path: newurl }, '', newurl);
-          }
+          position = el.closest('ul').prev().find('h2').attr('data-id') || ''; // Get name from parent
+          setHistoryState(position, category);
           open = []; // Clear array for open levels
           // Hide lower levels:
           $('.' + levels[index + 1]).removeClass('noTrans').css('left', '250%');
@@ -150,14 +158,11 @@ var colnavCustom = function() {
             el.closest('ul').css('width', calc(1.5, null, index - 1));
           }
         // Check if item is already open:
-        } else if (el.closest('a').hasClass('open') || el.find('a').hasClass('open') ||
+        } 
+        else if (el.closest('a').hasClass('open') || el.find('a').hasClass('open') ||
           el.hasClass('open')) {
-          text = el.closest('ul').prev().find('h2').data('id') || ''; // Get name from parent
-          if (history.replaceState) { // Modify the browser history object
-            newurl = window.location.pathname + '?position=' + text + category;
-            console.log(newurl);
-            window.history.replaceState({ path: newurl }, '', newurl);
-          } 
+          position = el.closest('ul').prev().find('h2').attr('data-id') || ''; // Get name from parent
+          setHistoryState(position, category);
           open = []; // Clear array for open levels
           // Hide lower levels:
           $('.' + levels[index + 1]).removeClass('noTrans').css('left', '250%');
@@ -171,11 +176,7 @@ var colnavCustom = function() {
           }
         // If item is not open:
         } else {
-          if (history.replaceState) { // Modify the browser history object
-            newurl = window.location.pathname + '?position=' + text + category;
-            console.log(newurl);
-            window.history.replaceState({ path: newurl }, '', newurl);
-          }
+          setHistoryState(position, category);
           if (index === 0) { // If on first level, reset markup and hide lower levels
             el.closest('ul').find('.dim').removeClass('dim');
             $('.' + levels[1]).removeClass('stacked').removeClass('noTrans').css('left', '250%');
@@ -249,7 +250,7 @@ var colnavCustom = function() {
   function attachHandlers(depth) {
     var queryHit = false;
     // (Re)initialize Foundation library logic:
-    if ($('.a-colnav').attr('data-dropdown-menu')) {
+    if ($('.a-colnav').prop('data-dropdown-menu')) {
       pluginInstance.destroy();
       pluginInstance = new Foundation.DropdownMenu($('.a-colnav').eq(0));
     } else {
@@ -277,8 +278,8 @@ var colnavCustom = function() {
       shifted = e.shiftKey;
     });
     // Set tabindexes:
-    $('.a-colnav-item-second').attr('tabindex', '0');
-    $('.a-colnav-item-third').attr('tabindex', '0');
+    $('.a-colnav-item-second').prop('tabindex', '0');
+    $('.a-colnav-item-third').prop('tabindex', '0');
     // Apply remaining action logic:
     $('.a-colnav-item').on('keydown', function(event) {
       whenKey(event, '.a-colnav-item');
@@ -294,7 +295,7 @@ var colnavCustom = function() {
         $('html,body').animate({ scrollTop: $(keys.colnavWrapper).offset().top }, 300);
       }
     });
-    $('.a-colnav-item').attr('tabindex', '0').on('focus', function() {
+    $('.a-colnav-item').prop('tabindex', '0').on('focus', function() {
       if ($('.a-colnav-secondLevel.submenu.is-active').length === 1) {
         $(this).off('keydown.zf.drilldown').parent().find('.a-colnav-item-second')
           .eq(0)
@@ -325,7 +326,7 @@ var colnavCustom = function() {
           whenClick($(this), true);
         }
       });
-      if ($('[name="js-switchForm"]').eq(0).is(':checked')) {
+      if ($(keys.toggleInput).eq(0).is(keys.checked)) {
         $('.a-colnav').find('a.a-colnav-item-second').each(function() {
           if ($(this).find('h3').text().toLowerCase() === decodeUrl(urlQuery('position'))) {
             queryHit = true;
@@ -336,8 +337,8 @@ var colnavCustom = function() {
           }
         });
       }
-      if (!queryHit && $('[name="js-switchForm"]').eq(0).is(':checked')) {
-        $('[name="js-switchForm"]').eq(1)[0].click();
+      if (!queryHit && $(keys.toggleInput).eq(0).is(keys.checked)) {
+        $(keys.toggleInput).eq(1)[0].click();
       }
     }    
   }
@@ -371,7 +372,7 @@ var colnavCustom = function() {
               $(__h4).attr('data-id', __item.Id);
               $(__span).addClass('a-colnav-rightText').text(__item.Provider || '–')
                 .appendTo($(__a));
-              $(__a).attr('href', __item.Url).addClass('a-colnav-item-third').appendTo($(__li));
+              $(__a).prop('href', __item.Url).addClass('a-colnav-item-third').appendTo($(__li));
               level3.push(__li);
             });
           } else {
@@ -380,11 +381,12 @@ var colnavCustom = function() {
           $(_h3).text(_item.Heading || _item.Title).appendTo($(_a1));
           $(_h3).attr('data-id', _item.Id);
           $(_h4).text(_item.Heading || _item.Title).appendTo($(_a2));
+          $(_h4).attr('data-id', _item.Id);
           $(_a1)
-            // .attr('href', '#')
+            // .prop('href', '#')
             .addClass('a-colnav-item-second').addClass('a-js-colnavLink')
             .appendTo($(_li));
-          $(_a2).attr('href', _item.Url).addClass('a-colnav-item-second')
+          $(_a2).prop('href', _item.Url).addClass('a-colnav-item-second')
             .addClass('a-js-colnavLinkAlt')
             .appendTo($(_li));
           $(_ul).addClass('a-colnav').addClass('a-colnav-vertical')
@@ -397,7 +399,7 @@ var colnavCustom = function() {
         $(h2).attr('data-id', item.Id);
         $(p).text(item.Description).addClass('a-leadText').appendTo($(a));
         $(a)
-          // .attr('href', '#')
+          // .prop('href', '#')
           .addClass('a-colnav-item').appendTo($(li));
         $(ul).addClass('a-colnav').addClass('a-colnav-vertical').addClass('a-colnav-secondLevel')
           .append(level2)
@@ -415,16 +417,18 @@ var colnavCustom = function() {
       setTimeout(function() { populateNavigation(str, data); }, 0);
     };
 
-  function getDrilldownSource(str) { // Drilldown logic
-    console.log('getDrilldownSource');
+  function getDrilldownSource(str) { 
+    console.log('getDrilldownSource called');
     showLoader();
     if (savedResults[str]) { // Get stored results if present
       afterRequest(str, savedResults[str]);
     }
     else {
-      var url = $('[name="js-switchForm"]').parent().parent().parent()
-        .attr('data-switchEndpoint') + str;
-      if (window.location.pathname.indexOf('DesignSystem') === 1 || window.location.origin.indexOf('localhost') !== -1 || window.location.origin.indexOf('10.4.67.79') !== -1) {
+      var url = endPointUrl + str;
+      console.log(url);
+      if (window.location.pathname.indexOf('DesignSystem') === 1 
+          || window.location.origin.indexOf('localhost') !== -1 
+          || window.location.origin.indexOf('10.4.67.79') !== -1) {
         url = url + '.json';
       }
       $.ajax({
@@ -436,11 +440,18 @@ var colnavCustom = function() {
       });      
     }
   }
+
   function resizedWindow() { // What happens upon window resize
+    console.log('resizedWindow called');
+    var wasSmall = isSmall;
     isSmall = $('.a-contentOverview').width() < 900; // Redefine boolean for determining screen size
+    // No change required if the window is still big/small
+    if (isSmall == wasSmall) {
+      return;
+    }
     if (!isSmall) {
       // Perform drilldown logic with currently selected source:
-      getDrilldownSource($('[name="js-switchForm"]:checked').attr('data-switchUrl'));
+      getDrilldownSource($(keys.toggleInput+keys.checked).data(keys.switchurl));
       // Ensure reset of markup
       $('.switch-container').show(); $('.a-js-colnavTitleRegular').text('Alle skjemaer');
     }
@@ -448,42 +459,79 @@ var colnavCustom = function() {
       $('.a-contentOverview').css('overflow-x', 'hidden');
     }
   }
-  $(document).ready(function() {
+
+  function onBodyClick(e) {
+    var arr = [];
+    if (!isSmall) {
+      if ($(e.target).closest('.a-colnav-firstLevel').length === 0) {
+        $('a.open').each(function() {
+          arr.push($(this));
+        });
+        arr.reverse();
+        arr.forEach(function(item) {
+          item.parent().trigger('mouseup');
+        });
+      }
+    }
+  }
+
+  function performResizeLogicAfterResizeEvents() {
     var resizeTimeout; // Timeout variable for resizing
+    window.onresize = function() { // Perform resize logic after resize events
+        clearTimeout(resizeTimeout); resizeTimeout = setTimeout(resizedWindow, 100);
+      };
+  }
+
+  function setSwitchUrlAttribute() {
+    $(keys.toggleInput).each(function(index) {
+      $(this).data(keys.switchurl,
+        $(this).parents().eq(2).data(keys.switchurl + (index + 1))
+      );
+      $(this).prop('data-'+keys.switchurl,
+        $(this).parents().eq(2).data(keys.switchurl + (index + 1))
+      );
+    });
+  }
+
+  function onToggleChange() {
+    if ($(this).is(keys.checked)) { // Get data from selected source
+      getDrilldownSource($(this).data(keys.switchurl));
+    }
+  }
+
+  function detectSelectedSourceChange() {
+    $(keys.toggleInput).change(onToggleChange); 
+  }
+
+  function loadDrillDownSource() {
+    // See if the URL contains the selected category already
+    var urlCategory = urlQuery(keys.category);
+    console.log(urlCategory);
+    // Otherwise chose category/kategori by default
+    var currentCategory = (urlCategory != null && urlCategory != false) ? urlCategory : 'category';
+    var selectedIndex = 1;
+    if (currentCategory == 'provider') {
+      selectedIndex = 2;
+    }
+    currentCategory = 'get' + currentCategory;
+    $(keys.toggleInput).prop('checked', false);
+    // Maybe not so robust to use the id, but it's the only way we have to
+    // identify each checkbox at this point
+    $('#atom-switch-cb' + selectedIndex).prop('checked', true);
+    getDrilldownSource(currentCategory);
+  }
+
+  $(document).ready(function() {    
+    endPointUrl = $(keys.toggleInput).parents().eq(3).data('switchendpoint');
     if ($('.a-colnav').length > 0) { // Check if drilldown markup is present
       if (isSmall) { // Small screen specific style (can be moved to stylesheet)
         $('.a-contentOverview').css('overflow-x', 'hidden');
       }
-      getDrilldownSource('getcategory'); // Get data from specific source
-      window.onresize = function() { // Perform resize logic after resize events
-        clearTimeout(resizeTimeout); resizeTimeout = setTimeout(resizedWindow, 100);
-      };
-      $('[name="js-switchForm"]').each(function(index) { // Set switchUrl attribute
-        $(this).attr('data-switchUrl',
-          $(this).parent().parent().parent()
-            .attr('data-switchUrl' + (index + 1))
-        );
-      });
-      $('[name="js-switchForm"]').change(function() { // Detect change of selected source
-        console.log($(this).attr('data-switchUrl'));
-        if ($(this).is(':checked')) { // Get data from selected source
-          getDrilldownSource($(this).attr('data-switchUrl'));
-        }
-      });
-      $('body').on('click', function(e) {
-        var arr = [];
-        if (!isSmall) {
-          if ($(e.target).closest('.a-colnav-firstLevel').length === 0) {
-            $('a.open').each(function() {
-              arr.push($(this));
-            });
-            arr.reverse();
-            arr.forEach(function(item) {
-              item.parent().trigger('mouseup');
-            });
-          }
-        }
-      });
+      loadDrillDownSource();      
+      performResizeLogicAfterResizeEvents();
+      setSwitchUrlAttribute();
+      detectSelectedSourceChange();      
+      $('body').on('click', onBodyClick);
     }
   });
 };
